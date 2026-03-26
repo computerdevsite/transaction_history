@@ -17,13 +17,21 @@
         .container { max-width: 1200px; margin: auto; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         
         .header { border-bottom: 3px solid black; padding-bottom: 15px; margin-bottom: 15px; }
-        h2 { margin: 0 0 10px 0; font-size: 1.2rem; color: var(--primary); text-align: center; }
+        h2 { margin: 0 0 5px 0; font-size: 1.2rem; color: var(--primary); text-align: center; }
+        
+        /* Transaction Counter Style */
+        .counter-badge {
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--accent);
+            margin-bottom: 10px;
+        }
 
         .search-box input { 
             width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box;
         }
 
-        /* Floating Button */
         .fab {
             position: fixed; bottom: 25px; right: 25px; background-color: var(--success);
             color: white; width: 60px; height: 60px; border-radius: 50%;
@@ -32,13 +40,11 @@
             font-size: 30px; font-weight: bold; z-index: 1000;
         }
 
-        /* Table & Action Buttons */
         table { width: 100%; border-collapse: collapse; display: none; margin-top: 10px; }
         th { background: #000; color: #fff; padding: 12px; text-align: left; font-size: 11px; }
         td { padding: 12px; border-bottom: 1px solid #eee; font-size: 13px; }
         .btn-download { background: #3498db; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 11px; }
 
-        /* MOBILE VIEW */
         @media screen and (max-width: 768px) {
             table thead { display: none; }
             table, tbody, tr, td { display: block; width: 100%; }
@@ -47,9 +53,8 @@
             td::before { content: attr(data-label); font-weight: bold; color: var(--primary); font-size: 11px; }
         }
 
-        /* --- RECEIPT TEMPLATE (HIDDEN FROM SCREEN) --- */
         #receipt-wrapper {
-            position: absolute; left: -9999px; /* Itatago sa labas ng screen */
+            position: absolute; left: -9999px; 
             width: 500px; background: white; padding: 40px; color: #333;
         }
         .receipt-header { border-bottom: 2px solid #3498db; padding-bottom: 20px; margin-bottom: 20px; text-align: center; }
@@ -67,6 +72,7 @@
 <div class="container">
     <div class="header">
         <h2>REPAIRED HISTORY LOG</h2>
+        <div class="counter-badge" id="transCounter">Loading count...</div>
         <div class="search-box">
             <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="Maghanap ng pangalan...">
         </div>
@@ -78,6 +84,7 @@
         <table id="dataTable">
             <thead>
                 <tr>
+                    <th>#</th>
                     <th>DATE</th><th>VALID</th><th>NAME</th><th>ADDRESS</th><th>CONTACT</th><th>REMARK</th><th>COST</th><th>ACTION</th>
                 </tr>
             </thead>
@@ -113,7 +120,7 @@
 
 <script>
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyiS0gSO7450X0yMzXKmwx6i2ChCG3bO9gcRq6U8CTRVEca_Kr7OlYemdidlIz_F3oY6g/exec";
-    const labels = ["Date", "Valid", "Name", "Address", "Contact", "Remark", "Cost", "Action"];
+    const labels = ["#", "Date", "Valid", "Name", "Address", "Contact", "Remark", "Cost", "Action"];
 
     async function loadData() {
         try {
@@ -121,15 +128,27 @@
             const data = await response.json();
             const tableBody = document.getElementById('tableBody');
             
-            data.reverse().forEach((row) => {
+            // I-update ang kabuuang bilang
+            document.getElementById('transCounter').innerText = "Total Transactions: " + data.length;
+
+            // Reverse para ang latest ay nasa itaas
+            const totalCount = data.length;
+            data.reverse().forEach((row, index) => {
                 let tr = document.createElement('tr');
-                row.forEach((cell, index) => {
+                
+                // Add Row Number (Actual sequence number)
+                let tdNum = document.createElement('td');
+                tdNum.setAttribute("data-label", "#");
+                tdNum.textContent = totalCount - index; 
+                tr.appendChild(tdNum);
+
+                row.forEach((cell, cellIndex) => {
                     let td = document.createElement('td');
-                    td.setAttribute("data-label", labels[index]);
-                    if((index === 0 || index === 1) && cell) {
+                    td.setAttribute("data-label", labels[cellIndex + 1]);
+                    if((cellIndex === 0 || cellIndex === 1) && cell) {
                         let d = new Date(cell);
                         td.textContent = isNaN(d) ? cell : d.toLocaleDateString('en-PH');
-                    } else if (index === 6) {
+                    } else if (cellIndex === 6) {
                         td.textContent = "₱" + Number(cell).toLocaleString();
                     } else {
                         td.textContent = cell || "-";
@@ -151,11 +170,13 @@
 
             document.getElementById('loading').style.display = 'none';
             document.getElementById('dataTable').style.display = 'table';
-        } catch (e) { console.error(e); }
+        } catch (e) { 
+            console.error(e); 
+            document.getElementById('transCounter').innerText = "Error loading count.";
+        }
     }
 
     function generateReceipt(row) {
-        // I-populate ang hidden template ng data mula sa row
         document.getElementById('r-date').innerText = new Date(row[0]).toLocaleDateString('en-PH');
         document.getElementById('r-valid').innerText = new Date(row[1]).toLocaleDateString('en-PH');
         document.getElementById('r-name').innerText = row[2];
@@ -165,8 +186,6 @@
         document.getElementById('r-cost').innerText = "₱" + Number(row[6]).toLocaleString();
 
         const receipt = document.getElementById('receipt-wrapper');
-        
-        // Gamitin ang html2canvas para i-capture ang hidden template
         html2canvas(receipt, { scale: 2 }).then(canvas => {
             const link = document.createElement('a');
             link.download = `Receipt_${row[2]}.png`;
@@ -178,10 +197,19 @@
     function searchTable() {
         let input = document.getElementById("searchInput").value.toUpperCase();
         let rows = document.getElementById("tableBody").getElementsByTagName("tr");
+        let visibleCount = 0;
+
         for (let i = 0; i < rows.length; i++) {
-            let name = rows[i].getElementsByTagName("td")[2].textContent.toUpperCase();
-            rows[i].style.display = name.indexOf(input) > -1 ? "" : "none";
+            let name = rows[i].getElementsByTagName("td")[3].textContent.toUpperCase(); // Index 3 na dahil sa # column
+            if (name.indexOf(input) > -1) {
+                rows[i].style.display = "";
+                visibleCount++;
+            } else {
+                rows[i].style.display = "none";
+            }
         }
+        // I-update ang count base sa search results
+        document.getElementById('transCounter').innerText = "Showing " + visibleCount + " results";
     }
 
     loadData();
