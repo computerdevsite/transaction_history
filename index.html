@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="tl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repair Log - Mobile Friendly</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --success: #27ae60;
+            --bg: #f0f2f5;
+        }
+
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); margin: 0; padding: 10px; padding-bottom: 80px; }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        
+        .header { border-bottom: 3px solid black; padding-bottom: 15px; margin-bottom: 15px; position: relative; }
+        h2 { margin: 0 0 10px 0; font-size: 1.2rem; color: var(--primary); text-align: center; }
+
+        .search-box input { 
+            width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; 
+            font-size: 16px; box-sizing: border-box;
+        }
+
+        /* --- FLOATING ACTION BUTTON --- */
+        .fab {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background-color: var(--success);
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            font-size: 30px;
+            font-weight: bold;
+            z-index: 1000;
+            transition: transform 0.2s;
+        }
+        .fab:active { transform: scale(0.9); }
+
+        #loading { text-align: center; padding: 20px; font-weight: bold; color: var(--accent); }
+
+        /* --- DESKTOP TABLE STYLE --- */
+        table { width: 100%; border-collapse: collapse; display: none; }
+        th { background: black; color: white; padding: 12px; text-align: left; font-size: 11px; }
+        td { padding: 12px; border-bottom: 1px solid #eee; font-size: 13px; }
+        .cost-cell { font-weight: bold; color: #e67e22; }
+
+        /* --- MOBILE CARD STYLE --- */
+        @media screen and (max-width: 768px) {
+            table thead { display: none; }
+            table, tbody, tr, td { display: block; width: 100%; }
+            tr { margin-bottom: 15px; border: 1px solid #ddd; border-radius: 10px; background: #fff; padding: 10px; box-sizing: border-box; }
+            td { text-align: right; padding: 8px 5px; border-bottom: 1px solid #f0f0f0; position: relative; display: flex; justify-content: space-between; }
+            td::before { content: attr(data-label); font-weight: bold; color: var(--primary); text-transform: uppercase; font-size: 11px; }
+            td:last-child { border-bottom: none; }
+        }
+    </style>
+</head>
+<body>
+
+<a href="elmer_transaction_add.html" class="fab">+</a>
+
+<div class="container">
+    <div class="header">
+        <h2>REPAIRED HISTORY LOG</h2>
+        <div class="search-box">
+            <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="Maghanap ng pangalan...">
+        </div>
+    </div>
+
+    <div id="loading">Connecting to Database...</div>
+
+    <div style="overflow-x:auto;">
+        <table id="dataTable">
+            <thead>
+                <tr>
+                    <th>REPAIRED DATE</th>
+                    <th>VALID UNTIL</th>
+                    <th>NAME</th>
+                    <th>ADDRESS</th>
+                    <th>CONTACT NUMBER</th>
+                    <th>REMARK</th>
+                    <th>TOTAL COST</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Palitan mo ito kung ano ang file name ng Add Page mo (halimbawa: "add_repair.html")
+    const ADD_PAGE_URL = "elmer_transaction_add.html";
+    document.querySelector('.fab').href = ADD_PAGE_URL;
+
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyiS0gSO7450X0yMzXKmwx6i2ChCG3bO9gcRq6U8CTRVEca_Kr7OlYemdidlIz_F3oY6g/exec";
+    const labels = ["Date", "Valid", "Name", "Address", "Contact", "Remark", "Cost"];
+
+    async function loadData() {
+        try {
+            const response = await fetch(WEB_APP_URL);
+            const data = await response.json();
+            
+            const tableBody = document.getElementById('tableBody');
+            const loading = document.getElementById('loading');
+            const table = document.getElementById('dataTable');
+
+            // Reverse para ang pinakabagong entry ay nasa taas
+            data.reverse().forEach(row => {
+                let tr = document.createElement('tr');
+                row.forEach((cell, index) => {
+                    let td = document.createElement('td');
+                    td.setAttribute("data-label", labels[index]);
+                    
+                    if((index === 0 || index === 1) && cell) {
+                        let d = new Date(cell);
+                        td.textContent = isNaN(d) ? cell : d.toLocaleDateString('en-PH');
+                    } else if (index === 6) {
+                        td.className = "cost-cell";
+                        td.textContent = cell ? "₱" + Number(cell).toLocaleString() : "₱0";
+                    } else {
+                        td.textContent = cell || "-";
+                    }
+                    tr.appendChild(td);
+                });
+                tableBody.appendChild(tr);
+            });
+
+            loading.style.display = 'none';
+            table.style.display = 'table';
+
+        } catch (error) {
+            document.getElementById('loading').innerHTML = "Connection Error.";
+        }
+    }
+
+    function searchTable() {
+        let input = document.getElementById("searchInput").value.toUpperCase();
+        let rows = document.getElementById("tableBody").getElementsByTagName("tr");
+        for (let i = 0; i < rows.length; i++) {
+            let name = rows[i].getElementsByTagName("td")[2].textContent.toUpperCase();
+            rows[i].style.display = name.indexOf(input) > -1 ? "" : "none";
+        }
+    }
+
+    loadData();
+</script>
+
+</body>
+</html>
