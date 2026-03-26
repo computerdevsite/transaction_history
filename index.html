@@ -145,9 +145,20 @@
                 row.forEach((cell, cellIndex) => {
                     let td = document.createElement('td');
                     td.setAttribute("data-label", labels[cellIndex + 1]);
+                    
                     if((cellIndex === 0 || cellIndex === 1) && cell) {
                         let d = new Date(cell);
                         td.textContent = isNaN(d) ? cell : d.toLocaleDateString('en-PH');
+                    } else if (cellIndex === 4 && cell) {
+                        // GINAWANG CLICKABLE ANG CONTACT NUMBER
+                        let cleanNumber = cell.toString().replace(/[^0-9+]/g, '');
+                        let callLink = document.createElement('a');
+                        callLink.href = `tel:${cleanNumber}`;
+                        callLink.textContent = cell;
+                        callLink.style.color = "#3498db";
+                        callLink.style.fontWeight = "bold";
+                        callLink.style.textDecoration = "underline";
+                        td.appendChild(callLink);
                     } else if (cellIndex === 6) {
                         td.textContent = "₱" + Number(cell).toLocaleString();
                     } else {
