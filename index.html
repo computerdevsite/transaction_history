@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Repair Log - Mobile Friendly</title>
+    <title>Repair Log - Professional Receipt</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root {
             --primary: #2c3e50;
@@ -15,53 +16,48 @@
         body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); margin: 0; padding: 10px; padding-bottom: 80px; }
         .container { max-width: 1200px; margin: auto; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         
-        .header { border-bottom: 3px solid black; padding-bottom: 15px; margin-bottom: 15px; position: relative; }
+        .header { border-bottom: 3px solid black; padding-bottom: 15px; margin-bottom: 15px; }
         h2 { margin: 0 0 10px 0; font-size: 1.2rem; color: var(--primary); text-align: center; }
 
         .search-box input { 
-            width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; 
-            font-size: 16px; box-sizing: border-box;
+            width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box;
         }
 
-        /* --- FLOATING ACTION BUTTON --- */
+        /* Floating Button */
         .fab {
-            position: fixed;
-            bottom: 25px;
-            right: 25px;
-            background-color: var(--success);
-            color: white;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            font-size: 30px;
-            font-weight: bold;
-            z-index: 1000;
-            transition: transform 0.2s;
+            position: fixed; bottom: 25px; right: 25px; background-color: var(--success);
+            color: white; width: 60px; height: 60px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            text-decoration: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            font-size: 30px; font-weight: bold; z-index: 1000;
         }
-        .fab:active { transform: scale(0.9); }
 
-        #loading { text-align: center; padding: 20px; font-weight: bold; color: var(--accent); }
-
-        /* --- DESKTOP TABLE STYLE --- */
-        table { width: 100%; border-collapse: collapse; display: none; }
-        th { background: black; color: white; padding: 12px; text-align: left; font-size: 11px; }
+        /* Table & Action Buttons */
+        table { width: 100%; border-collapse: collapse; display: none; margin-top: 10px; }
+        th { background: #000; color: #fff; padding: 12px; text-align: left; font-size: 11px; }
         td { padding: 12px; border-bottom: 1px solid #eee; font-size: 13px; }
-        .cost-cell { font-weight: bold; color: #e67e22; }
+        .btn-download { background: #3498db; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 11px; }
 
-        /* --- MOBILE CARD STYLE --- */
+        /* MOBILE VIEW */
         @media screen and (max-width: 768px) {
             table thead { display: none; }
             table, tbody, tr, td { display: block; width: 100%; }
             tr { margin-bottom: 15px; border: 1px solid #ddd; border-radius: 10px; background: #fff; padding: 10px; box-sizing: border-box; }
-            td { text-align: right; padding: 8px 5px; border-bottom: 1px solid #f0f0f0; position: relative; display: flex; justify-content: space-between; }
-            td::before { content: attr(data-label); font-weight: bold; color: var(--primary); text-transform: uppercase; font-size: 11px; }
-            td:last-child { border-bottom: none; }
+            td { text-align: right; padding: 8px 5px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; }
+            td::before { content: attr(data-label); font-weight: bold; color: var(--primary); font-size: 11px; }
         }
+
+        /* --- RECEIPT TEMPLATE (HIDDEN FROM SCREEN) --- */
+        #receipt-wrapper {
+            position: absolute; left: -9999px; /* Itatago sa labas ng screen */
+            width: 500px; background: white; padding: 40px; color: #333;
+        }
+        .receipt-header { border-bottom: 2px solid #3498db; padding-bottom: 20px; margin-bottom: 20px; text-align: center; }
+        .receipt-title { font-size: 24px; font-weight: bold; color: #2c3e50; letter-spacing: 2px; }
+        .receipt-body { font-size: 14px; line-height: 1.6; }
+        .receipt-row { display: flex; justify-content: space-between; border-bottom: 1px solid #f0f0f0; padding: 8px 0; }
+        .receipt-footer { margin-top: 30px; text-align: center; font-size: 12px; color: #777; border-top: 1px solid #ddd; padding-top: 10px; }
+        .total-amount { font-size: 20px; font-weight: bold; color: #e67e22; }
     </style>
 </head>
 <body>
@@ -76,19 +72,13 @@
         </div>
     </div>
 
-    <div id="loading">Connecting to Database...</div>
+    <div id="loading" style="text-align: center; padding: 20px;">Connecting to Database...</div>
 
     <div style="overflow-x:auto;">
         <table id="dataTable">
             <thead>
                 <tr>
-                    <th>REPAIRED DATE</th>
-                    <th>VALID UNTIL</th>
-                    <th>NAME</th>
-                    <th>ADDRESS</th>
-                    <th>CONTACT NUMBER</th>
-                    <th>REMARK</th>
-                    <th>TOTAL COST</th>
+                    <th>DATE</th><th>VALID</th><th>NAME</th><th>ADDRESS</th><th>CONTACT</th><th>REMARK</th><th>COST</th><th>ACTION</th>
                 </tr>
             </thead>
             <tbody id="tableBody"></tbody>
@@ -96,50 +86,93 @@
     </div>
 </div>
 
-<script>
-    // Palitan mo ito kung ano ang file name ng Add Page mo (halimbawa: "add_repair.html")
-    const ADD_PAGE_URL = "elmer_transaction_add.html";
-    document.querySelector('.fab').href = ADD_PAGE_URL;
+<div id="receipt-wrapper">
+    <div class="receipt-header">
+        <div style="font-weight: bold; font-size: 18px;">E&M HOME SERVICE REPAIR</div>
+        <div style="font-size: 12px;">Contact: 0985-121-6843</div>
+        <div class="receipt-title">SERVICE RECEIPT</div>
+    </div>
+    <div class="receipt-body">
+        <div class="receipt-row"><span>Date:</span> <b id="r-date"></b></div>
+        <div class="receipt-row"><span>Customer:</span> <b id="r-name"></b></div>
+        <div class="receipt-row"><span>Address:</span> <b id="r-address"></b></div>
+        <div class="receipt-row"><span>Contact:</span> <b id="r-contact"></b></div>
+        <div style="margin-top: 20px; border-bottom: 2px solid #333; padding-bottom: 5px; font-weight: bold;">WORK DESCRIPTION:</div>
+        <div style="padding: 10px 0; min-height: 50px;" id="r-remark"></div>
+        <div class="receipt-row" style="border-top: 2px solid #333; margin-top: 10px;">
+            <span style="font-weight: bold;">TOTAL COST:</span>
+            <span class="total-amount" id="r-cost"></span>
+        </div>
+        <div class="receipt-row"><span>Warranty Until:</span> <b id="r-valid"></b></div>
+    </div>
+    <div class="receipt-footer">
+        Thank you for choosing our repair services!<br>
+        <i>This is a computer-generated service log.</i>
+    </div>
+</div>
 
+<script>
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyiS0gSO7450X0yMzXKmwx6i2ChCG3bO9gcRq6U8CTRVEca_Kr7OlYemdidlIz_F3oY6g/exec";
-    const labels = ["Date", "Valid", "Name", "Address", "Contact", "Remark", "Cost"];
+    const labels = ["Date", "Valid", "Name", "Address", "Contact", "Remark", "Cost", "Action"];
 
     async function loadData() {
         try {
             const response = await fetch(WEB_APP_URL);
             const data = await response.json();
-            
             const tableBody = document.getElementById('tableBody');
-            const loading = document.getElementById('loading');
-            const table = document.getElementById('dataTable');
-
-            // Reverse para ang pinakabagong entry ay nasa taas
-            data.reverse().forEach(row => {
+            
+            data.reverse().forEach((row) => {
                 let tr = document.createElement('tr');
                 row.forEach((cell, index) => {
                     let td = document.createElement('td');
                     td.setAttribute("data-label", labels[index]);
-                    
                     if((index === 0 || index === 1) && cell) {
                         let d = new Date(cell);
                         td.textContent = isNaN(d) ? cell : d.toLocaleDateString('en-PH');
                     } else if (index === 6) {
-                        td.className = "cost-cell";
-                        td.textContent = cell ? "₱" + Number(cell).toLocaleString() : "₱0";
+                        td.textContent = "₱" + Number(cell).toLocaleString();
                     } else {
                         td.textContent = cell || "-";
                     }
                     tr.appendChild(td);
                 });
+
+                // Action Button
+                let actionTd = document.createElement('td');
+                actionTd.setAttribute("data-label", "Action");
+                let btn = document.createElement('button');
+                btn.className = "btn-download";
+                btn.innerHTML = "📥 RECEIPT";
+                btn.onclick = () => generateReceipt(row);
+                actionTd.appendChild(btn);
+                tr.appendChild(actionTd);
                 tableBody.appendChild(tr);
             });
 
-            loading.style.display = 'none';
-            table.style.display = 'table';
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('dataTable').style.display = 'table';
+        } catch (e) { console.error(e); }
+    }
 
-        } catch (error) {
-            document.getElementById('loading').innerHTML = "Connection Error.";
-        }
+    function generateReceipt(row) {
+        // I-populate ang hidden template ng data mula sa row
+        document.getElementById('r-date').innerText = new Date(row[0]).toLocaleDateString('en-PH');
+        document.getElementById('r-valid').innerText = new Date(row[1]).toLocaleDateString('en-PH');
+        document.getElementById('r-name').innerText = row[2];
+        document.getElementById('r-address').innerText = row[3];
+        document.getElementById('r-contact').innerText = row[4];
+        document.getElementById('r-remark').innerText = row[5];
+        document.getElementById('r-cost').innerText = "₱" + Number(row[6]).toLocaleString();
+
+        const receipt = document.getElementById('receipt-wrapper');
+        
+        // Gamitin ang html2canvas para i-capture ang hidden template
+        html2canvas(receipt, { scale: 2 }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `Receipt_${row[2]}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        });
     }
 
     function searchTable() {
